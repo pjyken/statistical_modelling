@@ -1,0 +1,19 @@
+---
+title: "CH1 Generalized Linear Models"
+author: "Richard Podkolinski"
+date: "February 28, 2016"
+output:
+  knitrBootstrap::bootstrap_document:
+  title: "CH1 Generalized Linear Models"
+  theme: journal
+  highlight: tomorrow
+  theme.chooser: TRUE
+  highlight.chooser: TRUE
+---
+  
+```{r Prerequisites, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(sandwich)
+library(msm)
+```

@@ -32,7 +32,7 @@ The variables are as follows:
 * $x_3:$ the average age of a housing unit in the district
 * $x_4:$ the distance to the nearest competative store
 * $x_5:$ the distance to the particular "do-it-yourself" store
-* $Y:$ the number of customers of the city that visited the store within those weeks
+* $Y:$ the number of customers of the city that visited the store within those 3 weeks
 
 
 ```{r Do-it-yourself 1, fig.height=15, fig.width=15, bootstrap.thumbnail.size=10}
@@ -52,7 +52,7 @@ par(mfrow=c(2,2))
 plot(glm_ql)
 ```
 
-\textcolor{red}{@TODO: Interpret Results}
+**Interpretation:** 
 
 ### 1.9.2 Buying a New Car?
 
@@ -134,7 +134,24 @@ summary(mq_m2)
 
 ### 6: SLID 
 
-```{r SLID }
+* Make a scatter plot of wages versus education. Make a second scatter plot of log(wages) versus education.
+* Discuss these plots in relation with the normal probability plots of wages and log(wages)
+```{r SLID, fig.height=10, fig.width=15, bootstrap.thumbnail.size=10}
 sl = SLID
+ggplot(sl, aes(x=education, y=wages)) + geom_point(alpha=0.2, color="slateblue")
+ggplot(sl, aes(x=education, y=log(wages))) + geom_point(alpha=0.2, color="slateblue")
+par(mfrow=c(1,2))
+qqnorm(sl$wages)
+qqnorm(log(sl$wages))
+```
+
+We see a considerably more pronounced relationship between wages and education when wages are transformed onto the log scale.
+
+
+```{r SLID 2 , fig.height=15, fig.width=15, bootstrap.thumbnail.size=10}
+sl_m1 = lm( log(wages) ~ education + age + sex + language, data=sl )
+summary(sl_m1)
+par(mfrow=c(2,2))
+plot(sl_m1)
 ```
 

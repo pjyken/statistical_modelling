@@ -5,15 +5,136 @@ date: "February 28, 2016"
 output:
   knitrBootstrap::bootstrap_document:
     title: "CH1 Generalized Linear Models"
-    theme: amelia
-    highlight: sunburst
+    theme: journal
+    highlight: tomorrow
     theme.chooser: TRUE
     highlight.chooser: TRUE
 ---
+
+```{r Prerequisites, message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(car)
+```
+
 
 # Generalized Linear Models
 
 ## 1.9 Data Examples
 
 ### 1.9.1 Number of Customers in a "do-it-yourself" store
+
+The variables are as follows:
+
+* $x_1:$ the number of housing units in the district (counting each apartment separately)
+* $x_2:$ the average income of people in that district
+* $x_3:$ the average age of a housing unit in the district
+* $x_4:$ the distance to the nearest competative store
+* $x_5:$ the distance to the particular "do-it-yourself" store
+* $Y:$ the number of customers of the city that visited the store within those weeks
+
+
+```{r Do-it-yourself 1, fig.height=15, fig.width=15, bootstrap.thumbnail.size=10}
+df = read.table("Data/doityourself.txt", header=TRUE)
+glm_data = glm(y ~ x1 + x2 + x3 + x4 + x5, data=df, family = poisson)
+summary(glm_data)
+par(mfrow=c(2,2))
+plot(glm_data)
+```
+
+Now with a quasi-likelihood fit
+
+```{r Do-it-yourself 2, fig.height=15, fig.width=15, bootstrap.thumbnail.size=10}
+glm_ql = glm(y ~ x1 + x2 + x3 + x4 + x5, data=df, family = quasipoisson)
+summary(glm_ql)
+par(mfrow=c(2,2))
+plot(glm_ql)
+```
+
+\textcolor{red}{@TODO: Interpret Results}
+
+### 1.9.2 Buying a New Car?
+
+The variables are as follows:
+
+* $x_1:$ the annual income of a family
+* $x_2:$ age of the oldest car the family owned, in years
+* $Y:$ whether or not the family purchased a car within a year
+
+Fit an appropriate model to this data. In addition, make a prediciton based on the model that a family with an annual income of $55,000 and a present car of 4 years will buy a new car within a year.
+
+
+```{r Buying a New Car}
+cr = read.table("Data/buyacar.txt", header=TRUE)
+cr_m1 = glm(y ~ x1 + x2, data=cr, family=binomial(link = logit))
+cr_m2 = glm(y ~ x1 + x2, data=cr, family=binomial(link = probit))
+cr_m3 = glm(y ~ x1 + x2, data=cr, family=binomial(link = cloglog))
+
+summary(cr_m1)
+summary(cr_m2)
+summary(cr_m3)
+
+predict(cr_m1, newdata = data.frame(x1 = 55, x2 = 4))
+predict(cr_m1, newdata = data.frame(x1 = 55, x2 = 4), type = "response")
+predict(cr_m2, newdata = data.frame(x1 = 55, x2 = 4))
+predict(cr_m2, newdata = data.frame(x1 = 55, x2 = 4), type = "response")
+predict(cr_m3, newdata = data.frame(x1 = 55, x2 = 4))
+predict(cr_m3, newdata = data.frame(x1 = 55, x2 = 4), type = "response")
+```
+
+\textcolor{red}{@TODO: Interpret Results}
+
+
+### Mesquite trees data
+
+We wish to construct a model for the total production fo photosynthetic biomass of mesquite trees by using easily measured aspects of the plant as opposed to actual harvesting of the mesquite.
+
+The variables are as follows:
+
+* $x_1:$ canopy diameter (in meters) measured along hte longest axis of the tree parallel to the ground
+* $x_2:$ canopy diameter (in meters) measured along the shortest axis of the tree parallel to the ground
+* $x_3:$ total height (in meters) of the tree
+* $x_4:$ canopy height (in meters) of the tree
+* $y:$ total weight (in grams) of photosynthetic material derived from the actual harvesting of msequite
+
+A multiplicative model is more natural than a linear one as leaf weight should be nearly proportional to canopy volume, and canopy volume should be nearly proportional to the product of canopy dimensions:
+
+$$ Y = \beta_0 x^{\beta_1}_1 x^{\beta_2}_2 x^{\beta_3}_3 x^{\beta_4}_4 \varepsilon $$
+
+A log transformaton gives us a linear model:
+
+$$ {Y}' = {\beta}'_0 + \beta_1 {x_1}' + \beta_2 {x_2}' + \beta_3 {x_3}' + \beta_4 {x_4}' + \varepsilon $$
+
+Where ${\beta}'_0 = \log(\beta_0)$, ${x}'_j = \log(x_j)$ and ${\varepsilon}' = \log(\varepsilon)$.
+
+**Exercise**
+Based on the selected output, using $\alpha = 0.05$:
+
+* Perform the model utility test
+* Test in the full Model $H_0 : \beta_2 = 0$ vs $H_a: \beta_2 \ne 0$
+* Test $H_0: \beta_3 = \beta_4$ vs $H_a: \beta_3 \ne \beta_4$
+
+```{r Mesquite Tree Data}
+mq = read.table("Data/mesquite.txt", header = TRUE)
+names(mq) = c("x1", "x2", "x3", "x4", "y")
+
+mq_m1 = lm(log(y) ~ log(x1) + log(x2) + log(x3) + log(x4), data=mq)
+
+drop1(mq_m1, ~., test = "F")
+summary(mq_m1)
+
+mq_m2 = lm(log(y) ~ log(x1) + log(x2), data=mq)
+drop1(mq_m2, ~., test = "F")
+summary(mq_m2)
+```
+
+
+## Exercises 
+
+### 6: SLID 
+
+```{r SLID }
+sl = SLID
+```
 

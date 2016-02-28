@@ -17,3 +17,49 @@ library(dplyr)
 library(sandwich)
 library(msm)
 ```
+
+
+```{r Load Data and Summarize}
+p = read.csv("Data/poisson_sim.csv")
+p = within(p, {
+  prog  = factor(prog, levels = 1:3, labels = c("General", "Academic", "Vocational"))
+  id    = factor(id) 
+})
+summary(p)
+```
+
+We have done several things in the above code.
+
+First, we read in the data from the csv into a dataframe called p. We then take one of the variables, prog, which represents the academic program the student is in and convert it to a factor. We also make id a factor. By doing this, we get more informative message read out from many of the standard functions.
+
+Finally, we print a summary of the dataframe p. As we converted the variables to factors, the summary() function knows which type of summary to display: quantiles for the continuous variables and counts for the factors.
+
+```{r Conditional Means of Number of Awards Per Program Category}
+with(p, tapply(num_awards, prog, function(x){
+  sprintf("M (SD) = %1.2f (%1.2f)", mean(x), sd(x))
+}))
+```
+
+In the above, we calculate the mean and standard deviation of the number of awards for each category of program: "General", "Academic", "Vocational". We can see from the output, that the conditional means vary per program category. Additionally, we see that conditional means and variances are similar.
+
+```{r Histogram of Conditional Means of Number of Awards Per Program Category}
+ggplot(p, aes(num_awards, fill = prog)) + geom_histogram(binwidth = 0.5, position = "dodge")
+```
+
+The Poisson is defined to have equal mean and variance. Overdispersion occurs when the variance is larger than that magnitude of the mean, which would be a violation of the properties of the Poisson. Quasi-Likelihood and Negative Binomial distributions are used when overdispersion is present.
+
+
+```{r Poisson Model #1}
+m1 = glm(num_awards ~ prog + math, data=p, family="poisson")
+summary(m1)
+```
+
+The first section is the echo of the model call, to remind you what was inputted.
+
+The second section is the deviance residuals. The Deviance residuals are approximately normally distributed ($\text{Normal}(0,\sigma)$) if the model is specificed correctly. Note that the median here is -0.5106, indicating that the distribution is positively skewed
+
+
+
+
+
+

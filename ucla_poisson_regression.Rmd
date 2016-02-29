@@ -56,7 +56,9 @@ summary(m1)
 
 The first section is the echo of the model call, to remind you what was inputted.
 
-The second section is the deviance residuals. The Deviance residuals are approximately normally distributed ($\text{Normal}(0,\sigma)$) if the model is specificed correctly. Note that the median here is -0.5106, indicating that the distribution is positively skewed
+The second section is the deviance residuals. The Deviance residuals are approximately normally distributed ($\text{Normal}(0,\sigma)$) if the model is specified correctly. Note that the median here is -0.5106, indicating that the distribution is positively skewed and thus not normal. 
+
+The third section is the coefficients of the Poisson regression. 
 
 
 

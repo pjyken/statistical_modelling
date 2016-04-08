@@ -1,0 +1,59 @@
+---
+title: "Statistical Modeling: Homework 2016"
+author: "Richard Podkolinski"
+date: "8 April 2016"
+output: html_document
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(faraway)
+df = motorins
+```
+
+## Question 1
+
+We first explore a dataset of third part motor insurance claims. The data is the aggregate of insurance claims given specific conditions, this is possible because at the time consumers were given identical risk arguments[1].
+
+Before we get to modeling, we should take a look at our data. 
+
+
+
+There are 8 variabes:
+
+- **Kilometers**: Ordinal variable, amount of kilometers per year driven.
+- **Zone**: Nominal variable defining geographical location.
+- **Bonus**: Integer, no-claims bonus. Number of years plus one since last claim.
+- **Make**: Nominal variable, defining car model, 9 is other.
+- **Insured**: Real, number of insured in policy-years.
+- **Claims**: Integer, number of claims.
+- **Payment**: Integer, Total value of payments in Swedish Korona. 
+- **perd**: Real, payment per claim and our response variable.
+
+Even a cursory reading of these variables indicates that there is a going to be a multicollinarity problem in the data. The response variable **pred** is just **Payment** / **Claims** thus the inclusion of both in any model is not advised. 
+
+We begin by plotting the density of the response variable. 
+
+```{r, echo=FALSE}
+df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + theme_bw()
+```
+
+As it is stated in the question, we see a positive value, positively skewed distribution. However, we also see a small pocket of outliers in the tail of the distribution. 
+
+We can fit a gamma distribution to this data with an inverse function as the default link.
+```{r}
+dfa = df
+dfa$Payment = NULL
+
+dfb = df
+dfb$Claims = NULL
+
+fit = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfa)
+
+
+```
+
+
+
+[1]: http://www.statsci.org/data/general/motorins.html    "Motorins"

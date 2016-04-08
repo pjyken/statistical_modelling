@@ -83,8 +83,8 @@ fit5 = glm(addt_model_5, family = Gamma(link = "inverse"), data = df)
 summary(fit5)
 
 addt_model_6 = perd ~ Make + Bonus + Zone + Payment
-fit6 = glm(addt_model_6, family = Gamma(link = "identity"), data = df)
-summary(fit5)
+fit6 = glm(addt_model_6, family = Gamma(link = "log"), data = df)
+summary(fit6)
 
 # addt_model = terms(addt_model)
 

@@ -6,10 +6,12 @@ output: html_document
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(MASS)
+library(faraway)
 library(dplyr)
 library(ggplot2)
-library(faraway)
-df = motorins
+library(GGally)
+
 ```
 
 ## Question 1
@@ -17,8 +19,6 @@ df = motorins
 We first explore a dataset of third part motor insurance claims. The data is the aggregate of insurance claims given specific conditions, this is possible because at the time consumers were given identical risk arguments[1].
 
 Before we get to modeling, we should take a look at our data. 
-
-
 
 There are 8 variabes:
 
@@ -31,27 +31,120 @@ There are 8 variabes:
 - **Payment**: Integer, Total value of payments in Swedish Korona. 
 - **perd**: Real, payment per claim and our response variable.
 
-Even a cursory reading of these variables indicates that there is a going to be a multicollinarity problem in the data. The response variable **pred** is just **Payment** / **Claims** thus the inclusion of both in any model is not advised. 
+Even a cursory reading of these variables indicates that there is a going to be a multicollinarity problem in the data. The response variable is a ratio of two of the predictors (**pred** = **Payment** / **Claims**) thus the inclusion of both in any model is not advised. 
+
 
 We begin by plotting the density of the response variable. 
 
 ```{r, echo=FALSE}
-df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + theme_bw()
+df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + theme_bw() + ggtitle("Density of Payment per Claim")
 ```
 
 As it is stated in the question, we see a positive value, positively skewed distribution. However, we also see a small pocket of outliers in the tail of the distribution. 
 
-We can fit a gamma distribution to this data with an inverse function as the default link.
+We can fit a gamma distribution to this data with an inverse function as the default link. 
+
+However, given that there is clearly two variables where there is multicolinarity, we will refrain from using automatic step function as it will crash glm due to a singular matrix. 
+
+It is possible that interactions and polynomials could lead to a better fit.
+
 ```{r}
-dfa = df
-dfa$Payment = NULL
+df = motorins
 
-dfb = df
-dfb$Claims = NULL
-
-fit = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfa)
+full_model = perd ~ Make * Kilometres * Bonus * Zone * Insured * Claims * Payment
+pair_model = perd ~ Make : Kilometres : Bonus : Zone : Insured : Claims : Payment
+addt_model = perd ~ Make + Kilometres + Bonus + Zone + Insured + Claims + Payment
 
 
+
+addt_model_1 = perd ~ Make + Kilometres + Bonus + Zone + Insured + Claims
+addt_model_2 = perd ~ Make + Kilometres + Bonus + Zone + Insured + Payment
+
+fit1 = glm(addt_model_1, family = Gamma(link = "inverse"), data = df)
+fit2 = glm(addt_model_2, family = Gamma(link = "inverse"), data = df)
+
+step1 = stepAIC(fit1, direction = "backward")
+step2 = stepAIC(fit2, direction = "backward")
+
+addt_model_3 = perd ~ Make + Bonus + Zone + Insured + Payment
+
+fit3 = glm(addt_model_3, family = Gamma(link = "inverse"), data = df)
+summary(fit3)
+
+
+addt_model_4 = perd ~ Make + Bonus + Zone + Insured
+
+fit4 = glm(addt_model_4, family = Gamma(link = "inverse"), data = df)
+summary(fit4)
+
+
+addt_model_5 = perd ~ Make + Bonus + Zone + Payment
+fit5 = glm(addt_model_5, family = Gamma(link = "inverse"), data = df)
+summary(fit5)
+
+addt_model_6 = perd ~ Make + Bonus + Zone + Payment
+fit6 = glm(addt_model_6, family = Gamma(link = "identity"), data = df)
+summary(fit5)
+
+# addt_model = terms(addt_model)
+
+
+glm(addt_model, family = Gamma(link = "inverse"), data = df)
+
+# full_model = perd ~ Make * Kilometres * Bonus * Zone * Insured * Claims * Payment
+# 
+# terms()
+# reformulate()
+# 
+# try_glm = function(model, data){
+#   tryCatch(
+#     glm(model, family = Gamma(link = "inverse"), data = data),
+#     error = function() return(NA)
+#   )
+# }
+# 
+# x = try_glm(full_model, df)
+# 
+# 
+# 
+# tryCatch(fit = glm(full_model, family = Gamma(link = "inverse"), data = df))
+# ??try
+
+fita = glm(perd ~ Kilometres + Zone + Bonus + Make + Insured + Claims, family = Gamma(link = "inverse"), data = df)
+fitb = glm(perd ~ Make + Kilometres + Bonus * Zone * Insured * Claims, family = Gamma(link = "inverse"), data = df)
+
+
+
+stepback = stepAIC(fitb, direction="backward", scope = list(upper = perd ~ Make + Kilometres + Bonus * Zone * Insured * Claims, lower = ~1))
+
+# df = df %>% select(-Claims, -Payment)
+# df = df %>% mutate(Kilometres = as.numeric(Kilometres))
+# df = df %>% mutate(Kilometres = as.factor(Kilometres))
+# 
+# dfc = df %>% mutate_each(funs(as.df = motorins))
+# 
+# dfa = df %>% select(-Claims)
+# dfb = df %>% select(-Payment)
+# 
+# 
+# dfc = dfc %>% select(-Payment)
+# 
+# fit_a = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfa)
+# fit_b = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfb)
+# 
+# fit_c = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfc)
+# 
+# stepAIC(fit_b, k = 2, direction = "forward", scope = list(upper = ~.^2, lower = ~1))
+
+
+
+fit = glm(perd ~ . , family = Gamma(link = "inverse"), data = df)
+summary(fit)
+
+fit = glm(perd ~ 1 , family = Gamma(link = "inverse"), data = df)
+summary(fit)
+
+stepAIC(fit, k = 2, direction = "forward", scope = list(upper = ~.^2, lower = ~1))
 ```
 
 

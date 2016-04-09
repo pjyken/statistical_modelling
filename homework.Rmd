@@ -173,9 +173,37 @@ At first viewing the Poisson model appears to be quite appropriate for predictin
 
 ## Question 2
 
+**(a)**
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+library(SemiPar)
+dft = data(ustemp)
+dft = ustemp
+
+afit = glm(min.temp ~ longitude + latitude, family = gaussian, data = dft)
+ifit = glm(min.temp ~ longitude + latitude + longitude:latitude, family = gaussian, data = dft)
+
+summary(afit)
+summary(ifit)
+```
+
+**(a)**
+
+We fit two models:
+$$ mintemp = \beta_0 + \beta_{lon} \text{longitude} + \beta_{lat} \text{latitute} + \varepsilon $$
+$$ mintemp = \beta_0 + \beta_{lon} \text{longitude} + \beta_{lat} \text{latitute} + \beta_{lon_lat} \text{longitude latitutde}  + \varepsilon $$
+
+The AIC of the first model is `r AIC(afit)` and for the second model `r AIC(ifit)`, we can see the second more complex model is preferred.
+
+**(b)**
 
 
 ## Question 3
+
+http://homes.ori.org/~keiths/Files/Methods/Multicollinearity.html
+http://www.few.vu.nl/~wvanwie/Courses/HighdimensionalDataAnalysis/WNvanWieringen_HDDA_Lecture4_RidgeRegression_20152016.pdf
+http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/9-1.pdf
+http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf
+https://onlinecourses.science.psu.edu/stat857/node/155
 
 http://arxiv.org/pdf/1509.09169.pdf
 

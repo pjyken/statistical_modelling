@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+set.seed(12345)
 library(MASS)
 library(faraway)
 library(dplyr)
@@ -53,7 +54,7 @@ The following table contains the selected variables, the type of link function a
 
 
 
-```{r, message=FALSE, warning=FALSE, echo=TRUE}
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 safe_stepAIC = function(df, link="inverse", type="+") {
   covars = names(df)[-8]
   respn = "perd ~ "
@@ -137,16 +138,31 @@ BIC(biti)
 | 4    | `r paste(main_model[c(-1,-2)], collapse = "")` | log      | `r AIC(litm)` | `r BIC(litm)` | No         |
 | 5    | `r paste(intr_model[c(-1,-2)], collapse = "")` | identity | `r AIC(iiti)` | `r BIC(iiti)` | No         |
 | 6    | `r paste(main_model[c(-1,-2)], collapse = "")` | identity | `r AIC(litm)` | `r BIC(iitm)` | No         |
-| 7    | `r paste(intr_bmod[c(-1,-2)], collapse = "")`  | inverse  | `r AIC(biti)` | `r BIC(biti)` | Yes        |
+| 7    | `r paste(intr_bmod[c(-1,-2)], collapse = "")`  | inverse  | `r AIC(biti)` | **`r BIC(biti)`** | Yes        |
 | 8    | `r paste(main_bmod[c(-1,-2)], collapse = "")`  | log      | `r AIC(bitm)` | `r BIC(bitm)` | Yes        |
 
 Several things can be observed from the first six rows of the table. Surprisingly, models that included both **Claims** and **Payments** returned the lowest information criteria. We can see that if we select a model with AIC, we would select the one with the largest complexity, one with five variables and all the interactions between them. The use of a log or identity links improves the fit (according to AIC/BIC) but often leads to models that do not converge.
 
 Generally, BIC prefers simpler models, this directly the result of a more severe penalty for model complexity. However, in this case (row 7), we find a complex model with five covariates and all interactions that has the lowest BIC of any model. 
 
-```{r}
+@@TODO: Maybe do model evaluation on the selected BIC model
 
+```{r, message=FALSE, warning=FALSE, include=FALSE}
+dfc = df %>% select(-perd)
+pfit = glm(Claims ~ ., family = poisson, data = dfc)
+summary(pfit)
+pfit$deviance/pfit$df.residual
+
+qfit = glm(Claims ~ ., family = quasipoisson, data = dfc)
+summary(qfit)
+
+# qfit$deviance/qfit$df.residual
+
+qfit_dev = round(sum(residuals(qfit, type = "pearson")^2)/df.residual(qfit), 2)
 ```
+
+At first viewing the Poisson model appears to be quite appropriate for predicting **Claims**. However, deeper examination indicates that the assumption of conditional mean equalling conditional variance is not true. This is known as under/overdispersion. By fitting **Claims** with a QuasiPoisson model we are able to explicitly model the degree of overdispersion which is `r qfit_dev` in this case.
+
 
 
 

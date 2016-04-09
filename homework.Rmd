@@ -151,7 +151,6 @@ Generally, BIC prefers simpler models, this directly the result of a more severe
 dfc = df %>% select(-perd)
 pfit = glm(Claims ~ ., family = poisson, data = dfc)
 summary(pfit)
-pfit$deviance/pfit$df.residual
 
 qfit = glm(Claims ~ ., family = quasipoisson, data = dfc)
 summary(qfit)
@@ -163,6 +162,49 @@ qfit_dev = round(sum(residuals(qfit, type = "pearson")^2)/df.residual(qfit), 2)
 
 At first viewing the Poisson model appears to be quite appropriate for predicting **Claims**. However, deeper examination indicates that the assumption of conditional mean equalling conditional variance is not true. This is known as under/overdispersion. By fitting **Claims** with a QuasiPoisson model we are able to explicitly model the degree of overdispersion which is `r qfit_dev` in this case.
 
+
+## Question 2
+
+
+
+## Question 3
+
+
+## Question 4
+
+```{r}
+ridge_reg = function(X, Y, lambda) {
+  # X := Design matrix
+  # Y := Response variable
+  # lambda := Penalty term 
+  
+  B_ridge = function(X, Y, lambda, transpose = TRUE) {
+    out = solve( t(X) %*% X + lambda * diag(ncol(X)) ) %*% (t(X) %*% Y)
+    return(out)
+  }
+  out = sapply(lambda, function(i) {B_ridge(X,Y,i)})
+  out = t(out)
+  out = as.data.frame(out)
+  out$lambda = lambda
+  return(out)
+}
+
+
+lambda = seq(1, 0, length.out = 100)
+Y = cars$dist
+X = cbind(rep(1, length(cars)), cars$speed, cars$speed^2)
+
+est_coef = ridge_reg(X,Y,lambda)
+est_coef %>% ggplot(aes(x = lambda, y = V3)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
+
+# Alternative scaled version
+X = cbind(as.vector(scale(cars$speed)), as.vector(scale(cars$speed^2)))
+est_coef = ridge_reg(X,Y,lambda)
+est_coef %>% ggplot(aes(x = lambda, y = V2)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
+
+
+
+```
 
 
 

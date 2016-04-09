@@ -12,6 +12,7 @@ library(dplyr)
 library(ggplot2)
 library(GGally)
 library(rethinking)
+options(scipen = 999)
 df = motorins
 ```
 
@@ -45,43 +46,44 @@ df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + the
 
 As it is stated in the question, we see a positive value, positively skewed distribution. We also see a small pocket of outliers in the tail of the distribution. A gamma distribution would seem appropriate in this context. We make use of the default link function, the inverse link $$ g(\mu_i) = \frac{1}{\mu_i} $$. 
 
-We first use AIC to select the covariates. However, given that there is clearly two variables where there is multicolinarity, we will refrain from using automatic step function as it will crash glm due to a singular matrix. We can, however, easily loop over the entire set of possible models and retrieve the AIC and BIC. 
+We then select covariates. However, given that there is clearly two variables where there is multicolinarity, we will refrain from using automatic step function as it will crash glm due to a singular matrix. We can, however, easily loop over the entire set of possible models and retrieve the AIC and BIC of each valid model while catching the fitting error. 
+
+The following table contains the selected variables, the type of link function and their respective information criterion score. Only the best of each are displayed. It should be noted that the asterix in the Variables column implies the presence of all interaction effects between variables, as it does in R's formula inputs. Two main types of models are explored, main effects and full interaction. 
 
 
 
-```{r, message=FALSE, warning=FALSE}
-df = motorins
 
-# Change collapse = "+" in covarm row to alter model type.
-covars = names(df)[-8]
-respn = "perd ~ "
-output = data.frame(Form = character(), AIC = numeric(), BIC = numeric())
-for(i in 6:1){
-  print(i)
-  lcovars = combn(covars, i, simplify = F)  
-  
-  for(i in 1:length(lcovars)){
-    covara = lcovars[[i]]
-    covarm = paste(covara, collapse = "+")
-    gform = as.formula(paste(respn, covarm))
-    print(covarm)
-    tryCatch({
-      fit =  glm(gform, family = Gamma(link = "inverse"), data = df)
-      fitaic = AIC(fit)
-      fitbic = BIC(fit)
-      inn_out = data.frame(Form = covarm, AIC = fitaic, BIC = fitbic)
-      output = rbind(output, inn_out)
-    }, error = function(e){})
+```{r, message=FALSE, warning=FALSE, echo=TRUE}
+safe_stepAIC = function(df, link="inverse", type="+") {
+  covars = names(df)[-8]
+  respn = "perd ~ "
+  output = data.frame(Form = character(), AIC = numeric(), BIC = numeric())
+  for(i in 6:1){
+    print(i)
+    lcovars = combn(covars, i, simplify = F)  
+    
+    for(i in 1:length(lcovars)){
+      covara = lcovars[[i]]
+      covarm = paste(covara, collapse = type)
+      gform = as.formula(paste(respn, covarm))
+      print(covarm)
+      tryCatch({
+        fit =  glm(gform, family = Gamma(link = link), data = df)
+        fitaic = AIC(fit)
+        fitbic = BIC(fit)
+        inn_out = data.frame(Form = paste0(fit$formula, collapse = " "), AIC = fitaic, BIC = fitbic)
+        output = rbind(output, inn_out)
+      }, error = function(e){})
+    }
   }
+  return(output)
 }
 
-output %>%
-  arrange(AIC, BIC) %>%
-  head()
 
 
 # Recheck best models
 
+# For Inverse Link selection
 intr_model = perd ~ Kilometres * Zone * Make * Claims * Payment
 main_model = perd ~ Make + Claims + Payment
 
@@ -95,6 +97,54 @@ AIC(fitm)
 BIC(fitm)
 
 
+# For Log Selection
+liti = glm(intr_model, family = Gamma(link = "log"), data = df)
+litm = glm(main_model, family = Gamma(link = "log"), data = df)
+
+AIC(liti)
+BIC(liti)
+AIC(litm)
+BIC(litm)
+
+# For Identity Selection
+iiti = glm(intr_model, family = Gamma(link = "identity"), data = df)
+iitm = glm(main_model, family = Gamma(link = "identity"), data = df)
+
+AIC(iiti)
+BIC(iiti)
+AIC(iitm)
+BIC(iitm)
+
+
+# Best BIC Model
+intr_bmod = perd ~ Bonus * Make * Insured * Claims * Payment
+main_bmod = perd ~ Make + Claims + Payment
+
+bitm = glm(main_bmod, family = Gamma(link = "inverse"), data = df)
+AIC(bitm)
+BIC(bitm)
+
+biti = glm(intr_bmod, family = Gamma(link = "log"), data = df)
+AIC(biti)
+BIC(biti)
+```
+
+| row  | Formula                                        | Link     | AIC           | BIC           | Converged? |
+|------|------------------------------------------------|----------|---------------|---------------|------------|
+| 1    | `r paste(intr_model[c(-1,-2)], collapse = "")` | inverse  | `r AIC(fiti)` | `r BIC(fiti)` | Yes        |
+| 2    | `r paste(main_model[c(-1,-2)], collapse = "")` | inverse  | `r AIC(fitm)` | `r BIC(fitm)` | Yes        |
+| 3    | `r paste(intr_model[c(-1,-2)], collapse = "")` | log      | `r AIC(liti)` | `r BIC(liti)` | Yes        |
+| 4    | `r paste(main_model[c(-1,-2)], collapse = "")` | log      | `r AIC(litm)` | `r BIC(litm)` | No         |
+| 5    | `r paste(intr_model[c(-1,-2)], collapse = "")` | identity | `r AIC(iiti)` | `r BIC(iiti)` | No         |
+| 6    | `r paste(main_model[c(-1,-2)], collapse = "")` | identity | `r AIC(litm)` | `r BIC(iitm)` | No         |
+| 7    | `r paste(intr_bmod[c(-1,-2)], collapse = "")`  | inverse  | `r AIC(biti)` | `r BIC(biti)` | Yes        |
+| 8    | `r paste(main_bmod[c(-1,-2)], collapse = "")`  | log      | `r AIC(bitm)` | `r BIC(bitm)` | Yes        |
+
+Several things can be observed from the first six rows of the table. Surprisingly, models that included both **Claims** and **Payments** returned the lowest information criteria. We can see that if we select a model with AIC, we would select the one with the largest complexity, one with five variables and all the interactions between them. The use of a log or identity links improves the fit (according to AIC/BIC) but often leads to models that do not converge.
+
+Generally, BIC prefers simpler models, this directly the result of a more severe penalty for model complexity. However, in this case (row 7), we find a complex model with five covariates and all interactions that has the lowest BIC of any model. 
+
+```{r}
 
 ```
 

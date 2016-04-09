@@ -45,9 +45,9 @@ df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + the
 ## Annotate Outliers 
 ```
 
-As it is stated in the question, we see a positive value, positively skewed distribution. We also see a small pocket of outliers in the tail of the distribution. A gamma distribution would seem appropriate in this context. We make use of the default link function, the inverse link $$ g(\mu_i) = \frac{1}{\mu_i} $$. 
+As it is stated in the question, we see a positive value, positively skewed distribution. We also see a small pocket of outliers in the tail of the distribution. A gamma distribution would seem appropriate in this context. We make use of the default link function, the inverse link $ g(\mu_i) = \frac{1}{\mu_i} $. 
 
-We then select covariates. However, given that there is clearly two variables where there is multicolinarity, we will refrain from using automatic step function as it will crash glm due to a singular matrix. We can, however, easily loop over the entire set of possible models and retrieve the AIC and BIC of each valid model while catching the fitting error. 
+We then select covariates. However, there is clearly two variables where there is multicolinarity, we will refrain from using automatic step function as it will crash `glm` due to a singular matrix error. We can, however, easily loop over the entire set of possible models and retrieve the AIC and BIC of each valid model while catching the fitting error. 
 
 The following table contains the selected variables, the type of link function and their respective information criterion score. Only the best of each are displayed. It should be noted that the asterix in the Variables column implies the presence of all interaction effects between variables, as it does in R's formula inputs. Two main types of models are explored, main effects and full interaction. 
 
@@ -141,11 +141,19 @@ BIC(biti)
 | 7    | `r paste(intr_bmod[c(-1,-2)], collapse = "")`  | inverse  | `r AIC(biti)` | **`r BIC(biti)`** | Yes        |
 | 8    | `r paste(main_bmod[c(-1,-2)], collapse = "")`  | log      | `r AIC(bitm)` | `r BIC(bitm)` | Yes        |
 
-Several things can be observed from the first six rows of the table. Surprisingly, models that included both **Claims** and **Payments** returned the lowest information criteria. We can see that if we select a model with AIC, we would select the one with the largest complexity, one with five variables and all the interactions between them. The use of a log or identity links improves the fit (according to AIC/BIC) but often leads to models that do not converge.
+**(a)**
 
-Generally, BIC prefers simpler models, this directly the result of a more severe penalty for model complexity. However, in this case (row 7), we find a complex model with five covariates and all interactions that has the lowest BIC of any model. 
+Several things can be observed from the first six rows of the table. Surprisingly, models that included both **Claims** and **Payments** returned the lowest information criteria. Fortunately, multicollinearity does not affect measures based on information criteria[2]. However, it does inflate standard errors of parameter estimates, thus it is the use of the model that should determine if these variables are retained. We can see that if we select a model with AIC, we would select the model with the largest complexity, one with five variables and all the interactions between them. This reaffirms the general notion that AIC can overfit model selection. 
 
-@@TODO: Maybe do model evaluation on the selected BIC model
+**(b)**
+
+The use of a log or identity link in the Gamma regression often improves the fit (according to out-of-sample deviance judged by AIC/BIC) but often leads to models that have difficulty converging. Providing better starting values for the `glm` function may alieviate this issue.
+
+**(c)**
+
+Generally, BIC prefers simpler models, this directly the result of a more severe penalty for model complexity. Somewhat surprisingly, in this case (row 7), we find a complex model with five covariates and all interactions that has the lowest BIC of any model. 
+
+**(d)**
 
 ```{r, message=FALSE, warning=FALSE, include=FALSE}
 dfc = df %>% select(-perd)
@@ -169,6 +177,9 @@ At first viewing the Poisson model appears to be quite appropriate for predictin
 
 ## Question 3
 
+http://arxiv.org/pdf/1509.09169.pdf
+
+
 
 ## Question 4
 
@@ -188,24 +199,28 @@ ridge_reg = function(X, Y, lambda) {
   out$lambda = lambda
   return(out)
 }
+```
 
+The above function is designed to output the coefficients for an arbitrary ridge regression as long as it given a design matrix, a response variable and a vector containing penalty terms. We use this `ridge_reg` function with the `cars` dataset to generate the following model:
 
-lambda = seq(1, 0, length.out = 100)
-Y = cars$dist
-X = cbind(rep(1, length(cars)), cars$speed, cars$speed^2)
+$$ \text{distance} = \beta_{\text{speed}} x_{\text{speed}} + \beta_{\text{speed}^2} x^2_{\text{speed}} + \varepsilon $$
 
-est_coef = ridge_reg(X,Y,lambda)
-est_coef %>% ggplot(aes(x = lambda, y = V3)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
+```{r}
+# X = cbind(rep(1, length(cars)), cars$speed, cars$speed^2)
+# est_coef = ridge_reg(X,Y,lambda)
+# est_coef %>% ggplot(aes(x = lambda, y = V3)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
 
 # Alternative scaled version
+lambda = seq(1, 0, length.out = 100)
+Y = cars$dist
 X = cbind(as.vector(scale(cars$speed)), as.vector(scale(cars$speed^2)))
 est_coef = ridge_reg(X,Y,lambda)
 est_coef %>% ggplot(aes(x = lambda, y = V2)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
 
-
-
 ```
 
+We can see from the chart above that as the value of $\lambda$ increases the coefficient of the quadratic term ($\beta_2$) decreases. This makes perfect sense, as the purpose of introducing $\lambda$ into the least squares estimator is to shrink regression coefficients. 
 
 
 [1]: http://www.statsci.org/data/general/motorins.html    "Motorins"
+[2]: Burnham & Anderson, 2002; Cohen et al., 2003         "AIC_Multicolinearity"

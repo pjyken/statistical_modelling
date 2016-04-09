@@ -52,6 +52,7 @@ We first use AIC to select the covariates. However, given that there is clearly 
 ```{r, message=FALSE, warning=FALSE}
 df = motorins
 
+# Change collapse = "+" in covarm row to alter model type.
 covars = names(df)[-8]
 respn = "perd ~ "
 output = data.frame(Form = character(), AIC = numeric(), BIC = numeric())
@@ -93,106 +94,8 @@ BIC(fiti)
 AIC(fitm)
 BIC(fitm)
 
-# 
-# 
-# 
-# 
-# 
-# 
-# test_model = perd ~ Make
-# fitm = glm(test_model, family = Gamma(link = "inverse"), data = df)
-# 
-# 
-# addt_model_1 = perd ~ Make + Kilometres + Bonus + Zone + Insured + Claims
-# addt_model_2 = perd ~ Make + Kilometres + Bonus + Zone + Insured + Payment
-# 
-# fit1 = glm(addt_model_1, family = Gamma(link = "inverse"), data = df)
-# fit2 = glm(addt_model_2, family = Gamma(link = "inverse"), data = df)
-# 
-# step1 = stepAIC(fit1, direction = "backward")
-# step2 = stepAIC(fit2, direction = "backward")
 
 
-# 
-# addt_model_3 = perd ~ Make + Bonus + Zone + Insured + Payment
-# 
-# fit3 = glm(addt_model_3, family = Gamma(link = "inverse"), data = df)
-# summary(fit3)
-# 
-# 
-# addt_model_4 = perd ~ Make + Bonus + Zone + Insured
-# 
-# fit4 = glm(addt_model_4, family = Gamma(link = "inverse"), data = df)
-# summary(fit4)
-# 
-# 
-# addt_model_5 = perd ~ Make + Bonus + Zone + Payment
-# fit5 = glm(addt_model_5, family = Gamma(link = "inverse"), data = df)
-# summary(fit5)
-# 
-# addt_model_6 = perd ~ Make + Bonus + Zone + Payment
-# fit6 = glm(addt_model_6, family = Gamma(link = "log"), data = df)
-# summary(fit6)
-# 
-# # addt_model = terms(addt_model)
-# 
-# 
-# glm(addt_model, family = Gamma(link = "inverse"), data = df)
-
-# full_model = perd ~ Make * Kilometres * Bonus * Zone * Insured * Claims * Payment
-# 
-# terms()
-# reformulate()
-# 
-# try_glm = function(model, data){
-#   tryCatch(
-#     glm(model, family = Gamma(link = "inverse"), data = data),
-#     error = function() return(NA)
-#   )
-# }
-# 
-# x = try_glm(full_model, df)
-# 
-# 
-# 
-# tryCatch(fit = glm(full_model, family = Gamma(link = "inverse"), data = df))
-# ??try
-# 
-# fita = glm(perd ~ Kilometres + Zone + Bonus + Make + Insured + Claims, family = Gamma(link = "inverse"), data = df)
-# fitb = glm(perd ~ Make + Kilometres + Bonus * Zone * Insured * Claims, family = Gamma(link = "inverse"), data = df)
-# 
-# 
-# 
-# stepback = stepAIC(fitb, direction="backward", scope = list(upper = perd ~ Make + Kilometres + Bonus * Zone * Insured * Claims, lower = ~1))
-
-# df = df %>% select(-Claims, -Payment)
-# df = df %>% mutate(Kilometres = as.numeric(Kilometres))
-# df = df %>% mutate(Kilometres = as.factor(Kilometres))
-# 
-# dfc = df %>% mutate_each(funs(as.df = motorins))
-# 
-# dfa = df %>% select(-Claims)
-# dfb = df %>% select(-Payment)
-# 
-# 
-# dfc = dfc %>% select(-Payment)
-# 
-# fit_a = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfa)
-# fit_b = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfb)
-# 
-# fit_c = glm(perd ~ . , family = Gamma(link = "inverse"), data = dfc)
-# 
-# stepAIC(fit_b, k = 2, direction = "forward", scope = list(upper = ~.^2, lower = ~1))
-
-
-# 
-# fit = glm(perd ~ . , family = Gamma(link = "inverse"), data = df)
-# summary(fit)
-# 
-# fit = glm(perd ~ 1 , family = Gamma(link = "inverse"), data = df)
-# summary(fit)
-# 
-# stepAIC(fit, k = 2, direction = "forward", scope = list(upper = ~.^2, lower = ~1))
 ```
 
 

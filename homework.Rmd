@@ -51,8 +51,7 @@ The following table contains the selected variables, the type of link function a
 
 
 
-
-```{r, message=FALSE, warning=FALSE, include=FALSE}
+```{r}
 safe_stepAIC = function(df, link="inverse", type="+") {
   covars = names(df)[-8]
   respn = "perd ~ "
@@ -60,7 +59,6 @@ safe_stepAIC = function(df, link="inverse", type="+") {
   for(i in 6:1){
     print(i)
     lcovars = combn(covars, i, simplify = F)  
-    
     for(i in 1:length(lcovars)){
       covara = lcovars[[i]]
       covarm = paste(covara, collapse = type)
@@ -77,9 +75,12 @@ safe_stepAIC = function(df, link="inverse", type="+") {
   }
   return(output)
 }
+```
 
 
 
+
+```{r, message=FALSE, warning=FALSE, include=FALSE}
 # Recheck best models
 
 # For Inverse Link selection
@@ -210,10 +211,64 @@ pvalue = function(c_n, m = 1e5) {
   1 - exp((-sum((1 - pchisq((1:m) * c_n, 1:m))/(1:m))))
 }
 
-order = 3
-oloc = poly(dft$longitude, dft$latitude)
-term_n = function(x) x * (x + 2)
-tot_terms = term_n(3)
+# order = 3
+# oloc = poly(dft$longitude, dft$latitude)
+# term_n = function(x) x * (x + 2)
+# tot_terms = term_n(3)
+
+library(SemiPar)
+data(ustemp)
+X = poly(ustemp$latitude, ustemp$longitude)
+x1 = X[,1]
+x2 = X[,2]
+Y  = ustemp$min.temp
+
+compare_models = function(null_formula, alt_formula, Cn = 4.18){
+	
+	null_model = lm(null_formula)
+	null_logLik = logLik(null_model)
+
+	altn_model = lm(alt_formula)
+	altn_logLik = logLik(altn_model)
+	
+	Tn = 2 * (altn_logLik - null_logLik) / (attr(altn_logLik, "df") - attr(null_logLik, "df"))
+
+	reject = Tn > Cn
+
+	# return(reject)
+	out = data.frame(null_model = paste(null_formula, collapse = ""), 
+	                 altn_model = paste(alt_formula, collapse = ""), 
+	                 Tn = Tn, Reject = reject)
+	return(out)
+}
+
+model_list = function(order) {
+	model_form = vector()
+	k=1
+	for(i in 1:order){
+	  for(j in 0:(i-1)){
+	    model_form[k] = paste("I(x1^",i," * ","x2^", j,")", sep="")
+	    k=k+1
+	    model_form[k] = paste("I(x1^",j," * ","x2^", i,")", sep="")
+	    k=k+1
+	  }
+	  model_form[k] = paste("I(x1^",i," * ","x2^", i,")", sep="")
+	  k=k+1
+	}
+	return(model_form)
+}
+
+model_form = model_list(3)
+
+null_model = Y ~ I(x1) + I(x2)
+
+compare_models(null_model, z)
+
+sapply(3:length(model_form), function(x){
+  compare_models(null_model, paste("Y ~ ", paste(model_form[1:x], collapse = "+")))
+})
+
+
 ```
 
 
@@ -305,17 +360,9 @@ The above function is designed to output the coefficients for an arbitrary ridge
 $$ \text{distance} = \beta_{\text{speed}} x_{\text{speed}} + \beta_{\text{speed}^2} x^2_{\text{speed}} + \varepsilon $$
 
 ```{r}
-# X = cbind(rep(1, length(cars)), cars$speed, cars$speed^2)
-# est_coef = ridge_reg(X,Y,lambda)
-# est_coef %>% ggplot(aes(x = lambda, y = V3)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
-
-# Alternative scaled version
 lambda = seq(1, 0, length.out = 100)
-Y = cars$dist
-X = cbind(as.vector(scale(cars$speed)), as.vector(scale(cars$speed^2)))
-est_coef = ridge_reg(X,Y,lambda)
+est_coef = ridge_reg(cbind(as.vector(scale(cars$speed)), as.vector(scale(cars$speed^2))),cars$dist,lambda)
 est_coef %>% ggplot(aes(x = lambda, y = V2)) + geom_line() + ylab("Estimated Coefficient of Speed^2") + xlab(expression(paste(lambda))) + ggtitle("Relationship between Coefficient and Lambda")
-
 ```
 
 We can see from the chart above that as the value of $\lambda$ increases the coefficient of the quadratic term ($\beta_2$) decreases. This makes perfect sense, as the purpose of introducing $\lambda$ into the least squares estimator is to shrink regression coefficients. 

@@ -179,12 +179,14 @@ library(SemiPar)
 dft = data(ustemp)
 dft = ustemp
 
-afit = glm(min.temp ~ longitude + latitude, family = gaussian, data = dft)
-ifit = glm(min.temp ~ longitude + latitude + longitude:latitude, family = gaussian, data = dft)
+afit = lm(min.temp ~ longitude + latitude, data = dft)
+ifit = lm(min.temp ~ longitude + latitude + longitude:latitude, data = dft)
 
 summary(afit)
 summary(ifit)
 ```
+
+
 
 **(a)**
 
@@ -196,16 +198,62 @@ The AIC of the first model is `r AIC(afit)` and for the second model `r AIC(ifit
 
 **(b)**
 
+```{r}
+pvalue = function(c_n, m = 1e5) {
+  1 - exp((-sum((1 - pchisq((1:m) * c_n, 1:m))/(1:m))))
+}
+
+order = 3
+oloc = poly(dft$longitude, dft$latitude)
+term_n = function(x) x * (x + 2)
+tot_terms = term_n(3)
+```
+
+
+
+
 
 ## Question 3
 
-http://homes.ori.org/~keiths/Files/Methods/Multicollinearity.html
-http://www.few.vu.nl/~wvanwie/Courses/HighdimensionalDataAnalysis/WNvanWieringen_HDDA_Lecture4_RidgeRegression_20152016.pdf
-http://web.as.uky.edu/statistics/users/pbreheny/764-F11/notes/9-1.pdf
-http://statweb.stanford.edu/~tibs/sta305files/Rudyregularization.pdf
-https://onlinecourses.science.psu.edu/stat857/node/155
+**(a)**
+$$
+\hat{\beta}_R = (X^t X + \lambda I_p)^{-1} X^t Y \\
+I = (X^t X)(X^t X)^{-1} \\
+\hat{\beta}_R = (X^t X + \lambda (X^t X)(X^t X)^{-1})^{-1} X^t Y \\
+\hat{\beta}_R = (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t Y \\
+Y = X \beta + \varepsilon \\
+\hat{\beta}_R = (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t (X \beta + \varepsilon )\\
+\hat{\beta}_R = (I_p + \lambda (X^t X)^{-1})^{-1} \beta + (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t \varepsilon \\
+E(\hat{\beta}_R) = (I_p + \lambda (X^t X)^{-1})^{-1} \beta \\
+\text{Bias} = E(\hat{\beta}_R) - \beta \\
+\text{Bias} = ((I_p + \lambda (X^t X)^{-1})^{-1})-I_p) \beta
+$$
 
-http://arxiv.org/pdf/1509.09169.pdf
+**(b)**
+$$
+A = (I_p + \lambda(X^t X)^{-1})^{-1} \\
+\text{Var}(\hat{\beta}_R) = \text{Var}(A \hat{\beta}_{LS}) \\
+\text{Var}(\hat{\beta}_R) = A \text{Var}(\hat{\beta}_{LS}) A^t\\
+\text{Cov}(AX,BY) = A \text{Cov}(X,Y)B^t \\
+\text{Var}(\hat{\beta}_R) = A \sigma^2(X^t X)^{-1} A^t \\
+\text{Var}(\hat{\beta}_R) = (I_p + \lambda(X^t X)^{-1})^{-1} (X^t X)^{-1} (I_p + \lambda(X^t X)^{-1})^{-1} \\
+$$
+
+**(c)**
+$$
+E[\hat{Y}_R] = E[X \hat{\beta}_R] \\
+E[\hat{Y}_R] = X E[\hat{\beta}_R] \\
+E[\hat{Y}_R] = X (I_p + \lambda (X^t X)^{-1})^{-1} \beta \\
+\\
+\text{Bias}(\hat{Y}_R) = E[\hat{Y}_R] - E[Y] \\
+\text{Bias}(\hat{Y}_R) = X (I_p + \lambda (X^t X)^{-1})^{-1} \beta - X \beta \\
+\text{Bias}(\hat{Y}_R) = X ((I_p + \lambda (X^t X)^{-1})^{-1} - I_p) \beta \\
+\\
+\text{Var}(\hat{Y}_R) = \text{Var}(X \hat{\beta}_R) \\
+\text{Var}(\hat{Y}_R) = \text{Var}(X A \hat{\beta}_{LS}) \\
+\text{Var}(\hat{Y}_R) = (XA) \text{Var}(\hat{\beta}_{LS})(XA)^t \\
+\text{Var}(\hat{Y}_R) = \sigma^2 (XA) (X^t X)(XA)^t \\
+$$
 
 
 

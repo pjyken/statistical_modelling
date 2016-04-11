@@ -40,9 +40,7 @@ Even a cursory reading of these variables indicates that there is a going to be 
 We then plot the density of the response variable. 
 
 ```{r, echo=FALSE}
-df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + theme_bw() + ggtitle("Density of Payment per Claim")
-
-## Annotate Outliers 
+df %>% ggplot(aes(x = perd)) + geom_density(color = "slateblue", size = 1) + theme_bw() + ggtitle("Density of Payment per Claim") + geom_text(aes(x= 30000, y = 0.00005, label = "Outliers")) + geom_segment(aes(x = 30000, y = 0.000045, xend = 31000, yend = 0.000015), arrow = arrow(length = unit(0.03, "npc")))
 ```
 
 As it is stated in the question, we see a positive value, positively skewed distribution. We also see a small pocket of outliers in the tail of the distribution. A gamma distribution would seem appropriate in this context. We make use of the default link function, the inverse link $ g(\mu_i) = \frac{1}{\mu_i} $. 
@@ -163,12 +161,12 @@ summary(pfit)
 qfit = glm(Claims ~ ., family = quasipoisson, data = dfc)
 summary(qfit)
 
-# qfit$deviance/qfit$df.residual
-
 qfit_dev = round(sum(residuals(qfit, type = "pearson")^2)/df.residual(qfit), 2)
 ```
 
 At first viewing the Poisson model appears to be quite appropriate for predicting **Claims**. However, deeper examination indicates that the assumption of conditional mean equalling conditional variance is not true. This is known as under/overdispersion. By fitting **Claims** with a QuasiPoisson model we are able to explicitly model the degree of overdispersion which is `r qfit_dev` in this case.
+
+
 
 
 ## Question 2
@@ -184,6 +182,15 @@ ifit = lm(min.temp ~ longitude + latitude + longitude:latitude, data = dft)
 
 summary(afit)
 summary(ifit)
+AIC(afit)
+AIC(ifit)
+# plot(stdres(ifit))
+# abline(h=c(-2.5,2.5),lty=2)
+qqnorm(dft$min.temp)
+qqline(dft$min.temp)
+
+# library(nortest)
+# lillie.test(dft$min.temp)
 ```
 
 
@@ -216,43 +223,59 @@ tot_terms = term_n(3)
 ## Question 3
 
 **(a)**
+
 $$
-\hat{\beta}_R = (X^t X + \lambda I_p)^{-1} X^t Y \\
-I = (X^t X)(X^t X)^{-1} \\
-\hat{\beta}_R = (X^t X + \lambda (X^t X)(X^t X)^{-1})^{-1} X^t Y \\
-\hat{\beta}_R = (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t Y \\
-Y = X \beta + \varepsilon \\
-\hat{\beta}_R = (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t (X \beta + \varepsilon )\\
-\hat{\beta}_R = (I_p + \lambda (X^t X)^{-1})^{-1} \beta + (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t \varepsilon \\
-E(\hat{\beta}_R) = (I_p + \lambda (X^t X)^{-1})^{-1} \beta \\
-\text{Bias} = E(\hat{\beta}_R) - \beta \\
-\text{Bias} = ((I_p + \lambda (X^t X)^{-1})^{-1})-I_p) \beta
+\begin{align*}
+&\text{We compute the bias of the } \hat{\beta}_R \text{ we begin with its stated definition:} \\
+\hat{\beta}_R &= (X^t X + \lambda I_p)^{-1} X^t Y \\
+&\text{We know that }I_p \text{ can be expanded through the identity } I = (X^t X)(X^t X)^{-1} \\
+\hat{\beta}_R &= (X^t X + \lambda (X^t X)(X^t X)^{-1})^{-1} X^t Y \\
+\hat{\beta}_R &= (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t Y \\
+&\text{Further, we know the linear model matrix form is } Y = X \beta + \varepsilon \\
+\hat{\beta}_R &= (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t (X \beta + \varepsilon )\\
+\hat{\beta}_R &= (I_p + \lambda (X^t X)^{-1})^{-1} \beta + (I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t \varepsilon \\
+&\text{We can then take the expectation of the above} \\
+E(\hat{\beta}_R) &= E[(I_p + \lambda (X^t X)^{-1})^{-1} \beta] + E[(I_p + \lambda (X^t X)^{-1})^{-1} (X^t X)^{-1} X^t \varepsilon] \\
+&\text{The value of } E[\varepsilon] = 0 \\
+E(\hat{\beta}_R) &= (I_p + \lambda (X^t X)^{-1})^{-1} E[\beta] \\
+&\text{The least-squares property tells us that } E[\beta] = \beta \\
+E(\hat{\beta}_R) &= (I_p + \lambda (X^t X)^{-1})^{-1} \beta \\
+&\text{We can then determine the bias} \\
+\text{Bias} &= E(\hat{\beta}_R) - \beta \\
+\text{Bias} &= (I_p + \lambda (X^t X)^{-1})^{-1} \beta - \beta \\
+\text{Bias} &= ((I_p + \lambda (X^t X)^{-1})^{-1})-I_p) \beta
+\end{align*}
 $$
 
 **(b)**
 $$
-A = (I_p + \lambda(X^t X)^{-1})^{-1} \\
-\text{Var}(\hat{\beta}_R) = \text{Var}(A \hat{\beta}_{LS}) \\
-\text{Var}(\hat{\beta}_R) = A \text{Var}(\hat{\beta}_{LS}) A^t\\
-\text{Cov}(AX,BY) = A \text{Cov}(X,Y)B^t \\
-\text{Var}(\hat{\beta}_R) = A \sigma^2(X^t X)^{-1} A^t \\
-\text{Var}(\hat{\beta}_R) = (I_p + \lambda(X^t X)^{-1})^{-1} (X^t X)^{-1} (I_p + \lambda(X^t X)^{-1})^{-1} \\
+\begin{align*}
+\text{Var}(\hat{\beta}_R) &= \text{Var}(A \hat{\beta}_{LS}) \\
+\text{Var}(\hat{\beta}_R) &= A \text{Var}(\hat{\beta}_{LS}) A^t\\
+\text{Var}(\hat{\beta}_R) &= \sigma^2 A (X^t X)^{-1} A^t \\
+&\text{We can then expand } A = (I_p + \lambda(X^t X)^{-1})^{-1} \\
+\text{Var}(\hat{\beta}_R) &= \sigma^2 (I_p + \lambda(X^t X)^{-1})^{-1} (X^t X)^{-1} ((I_p + \lambda(X^t X)^{-1})^{-1})^t \\
+\end{align*}
 $$
+
 
 **(c)**
 $$
-E[\hat{Y}_R] = E[X \hat{\beta}_R] \\
-E[\hat{Y}_R] = X E[\hat{\beta}_R] \\
-E[\hat{Y}_R] = X (I_p + \lambda (X^t X)^{-1})^{-1} \beta \\
+\begin{align*}
+\hat{Y}_R &= X \hat{\beta}_R \\
+E[\hat{Y}_R] &= E(X \hat{\beta}_R) \\
+E[\hat{Y}_R] &= X E(\hat{\beta}_R) \\
+E[\hat{Y}_R] &= X (I_p + \lambda (X^t X)^{-1})^{-1} \beta \\
 \\
-\text{Bias}(\hat{Y}_R) = E[\hat{Y}_R] - E[Y] \\
-\text{Bias}(\hat{Y}_R) = X (I_p + \lambda (X^t X)^{-1})^{-1} \beta - X \beta \\
-\text{Bias}(\hat{Y}_R) = X ((I_p + \lambda (X^t X)^{-1})^{-1} - I_p) \beta \\
+\text{Bias}(\hat{Y}_R) &= E(\hat{Y}_R) - E(Y) \\
+\text{Bias}(\hat{Y}_R) &= X (I_p + \lambda (X^t X)^{-1})^{-1} \beta - X \beta \\
+\text{Bias}(\hat{Y}_R) &= X ((I_p + \lambda (X^t X)^{-1})^{-1} - I_p) \beta \\
 \\
-\text{Var}(\hat{Y}_R) = \text{Var}(X \hat{\beta}_R) \\
-\text{Var}(\hat{Y}_R) = \text{Var}(X A \hat{\beta}_{LS}) \\
-\text{Var}(\hat{Y}_R) = (XA) \text{Var}(\hat{\beta}_{LS})(XA)^t \\
-\text{Var}(\hat{Y}_R) = \sigma^2 (XA) (X^t X)(XA)^t \\
+\text{Var}(\hat{Y}_R) &= \text{Var}(X \hat{\beta}_R) \\
+\text{Var}(\hat{Y}_R) &= \text{Var}(X A \hat{\beta}_{LS}) \\
+\text{Var}(\hat{Y}_R) &= (XA) \text{Var}(\hat{\beta}_{LS})(XA)^t \\
+\text{Var}(\hat{Y}_R) &= \sigma^2 (XA) (X^t X)(XA)^t \\
+\end{align*}
 $$
 
 

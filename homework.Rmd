@@ -13,8 +13,14 @@ library(dplyr)
 library(ggplot2)
 library(GGally)
 library(rethinking)
+library(SemiPar) 
 options(scipen = 999)
 df = motorins
+data(ustemp)
+X = poly(ustemp$latitude, ustemp$longitude)
+x1 = X[,1] 
+x2 = X[,2]
+Y  = ustemp$min.temp
 ```
 
 ## Question 1
@@ -181,17 +187,10 @@ dft = ustemp
 afit = lm(min.temp ~ longitude + latitude, data = dft)
 ifit = lm(min.temp ~ longitude + latitude + longitude:latitude, data = dft)
 
-summary(afit)
-summary(ifit)
-AIC(afit)
-AIC(ifit)
-# plot(stdres(ifit))
-# abline(h=c(-2.5,2.5),lty=2)
-qqnorm(dft$min.temp)
-qqline(dft$min.temp)
-
-# library(nortest)
-# lillie.test(dft$min.temp)
+# summary(afit)
+# summary(ifit)
+# AIC(afit)
+# AIC(ifit)
 ```
 
 
@@ -207,66 +206,48 @@ The AIC of the first model is `r AIC(afit)` and for the second model `r AIC(ifit
 **(b)**
 
 ```{r}
-library(SemiPar)
-data(ustemp)
-X = poly(ustemp$latitude, ustemp$longitude)
-x1 = X[,1]
-x2 = X[,2]
-Y  = ustemp$min.temp
-
 pvalue = function(c_n, m = 1e5) {
   1 - exp((-sum((1 - pchisq((1:m) * c_n, 1:m))/(1:m))))
 }
-
 compare_models = function(null_formula, alt_formula, Cn = 4.18){
-	
 	null_model = lm(null_formula)
 	null_logLik = logLik(null_model)
-
 	altn_model = lm(alt_formula)
 	altn_logLik = logLik(altn_model)
-	
 	Tn = 2 * (altn_logLik - null_logLik) / (attr(altn_logLik, "df") - attr(null_logLik, "df"))
-
 	reject = Tn > Cn
-
-	# return(reject)
 	out = data.frame(Tn = Tn, Reject = reject)
 	return(out)
 }
-
-model_list = function(order) {
+model_list = function(order, interactions = TRUE) {
 	model_form = vector()
 	k=1
 	for(i in 1:order){
-	  for(j in 0:(i-1)){
-	    model_form[k] = paste("I(x1^",i," * ","x2^", j,")", sep="")
-	    k=k+1
-	    model_form[k] = paste("I(x1^",j," * ","x2^", i,")", sep="")
-	    k=k+1
+	  if(interactions == TRUE) {
+	    	  for(j in 0:(i-1)){
+      	    model_form[k] = paste("I(x1^",i," * ","x2^", j,")", sep="")
+      	    k=k+1
+      	    model_form[k] = paste("I(x1^",j," * ","x2^", i,")", sep="")
+      	    k=k+1
+	    }
 	  }
-	  model_form[k] = paste("I(x1^",i," * ","x2^", i,")", sep="")
+	    model_form[k] = paste("I(x1^",i," * ","x2^", i,")", sep="")
 	  k=k+1
 	}
 	return(model_form)
 }
-
 order = 3
 model_form = model_list(order)
-
 null_model = Y ~ I(x1) + I(x2)
 
 output = sapply(order:length(model_form), function(x){
   compare_models(null_model, paste("Y ~ ", paste(model_form[1:x], collapse = "+")))
 })
-
 model_comparison = as.data.frame(t(output))
 model_comparison$model_form = model_form[order:length(model_form)]
-
 best_model_idx = which.max(model_comparison$Tn)
 best_model = model_comparison[best_model_idx,]
 best_formula = paste("Y ~", paste(model_form[1:best_model_idx], collapse = " + ") ) 
-
 best_p_value = pvalue(unlist(best_model$Tn))
 ```
 
@@ -274,6 +255,13 @@ The above code performs the order selection test for additivity. It uses the nul
 
 From the above, we can determine that `r best_formula` is the best model, with a $T_n$ of `r unlist(best_model$Tn)`. As $T_n > C_n$ which is defined as 4.18, we reject $H_0$ with a p-value of `r best_p_value`.
 
+**(c)**
+
+
+```{r}
+null_model = paste("Y ~ ", paste(model_list(3, interactions = FALSE), collapse = " + "))
+model_form = model_list(3, poly = FALSE)
+```
 
 
 

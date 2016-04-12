@@ -1,6 +1,6 @@
 ---
-title: "Statistical Modeling: Homework 2016"
-author: "Richard Podkolinski"
+title: 'Statistical Modeling: Homework 2016'
+author: "Richard Podkolinski - r0417674"
 date: "8 April 2016"
 output: html_document
 ---

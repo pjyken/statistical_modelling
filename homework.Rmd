@@ -266,9 +266,13 @@ model_comparison$model_form = model_form[order:length(model_form)]
 best_model_idx = which.max(model_comparison$Tn)
 best_model = model_comparison[best_model_idx,]
 best_formula = paste("Y ~", paste(model_form[1:best_model_idx], collapse = " + ") ) 
+
+best_p_value = pvalue(unlist(best_model$Tn))
 ```
 
-The above code performs the order selection test for additivity. It uses the null hypothesis $Y = \beta_0 + \beta_1 x_1 + \beta_2 x_2$. It then tests every nested model sequence up to an order of 3. It makes use of the `poly()` function, which converts the original longitude and latitude data into orthogonalized polynomials. 
+The above code performs the order selection test for additivity. It uses the null hypothesis $Y = \beta_0 + \beta_1 x_1 + \beta_2 x_2$. It makes use of the `poly()` function, which converts the original longitude and latitude data into orthogonalized polynomials for numerical stability. It then tests every nested model sequence up to an order of 3. Finally, it returns the p-value for the selected model.
+
+From the above, we can determine that `r best_formula` is the best model, with a $T_n$ of `r unlist(best_model$Tn)`. As $T_n > C_n$ which is defined as 4.18, we reject $H_0$ with a p-value of `r best_p_value`.
 
 
 

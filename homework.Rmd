@@ -259,10 +259,25 @@ From the above, we can determine that `r best_formula` is the best model, with a
 
 
 ```{r}
-null_model = paste("Y ~ ", paste(model_list(3, interactions = FALSE), collapse = " + "))
-model_form = model_list(3, poly = FALSE)
+k = 5
+null_form = model_list(k, interactions = FALSE)
+null_model = paste("Y ~ ", paste(null_form, collapse = " + "))
+model_form = model_list(k)
+model_form = setdiff(model_form, null_form)
+model_form = c(null_form, model_form)
+
+output = sapply((k+1):length(model_form), function(x){
+  compare_models(null_model, paste("Y ~ ", paste(model_form[1:x], collapse = "+")))
+})
+model_comparison = as.data.frame(t(output))
+model_comparison$model_form = model_form[(k+1):length(model_form)]
+best_model_idx = which.max(model_comparison$Tn)
+best_model = model_comparison[best_model_idx,]
+best_formula = paste("Y ~", paste(model_form[1:best_model_idx], collapse = " + ") ) 
+best_p_value = pvalue(unlist(best_model$Tn))
 ```
 
+With the form $\beta_0 + \sum^k_{j=1} (\beta_{1,j} x_1^j + \beta_{2,j} x_2^j)$ where $k=3,4,\text{ or }5$ we find a similar pattern. $T_n$ is always the greatest in the smallest addition to the model, with the addition of the $x_1$ covariate. This is likely because the model is so complex, that the addition of an uncorrelated variable is always seen as the perferred outcome. 
 
 
 ## Question 3

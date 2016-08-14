@@ -1,0 +1,65 @@
+
+\section{A1} 
+
+We first tackle the specification of an appropriate statistical model for the loan amount (in 1000 €) given to subset of variables in the bank default data set. This subset includes the annual income of customers (in 1000 €), their gender, how old they are (in years) and whether or not they are a new or existing customer of the bank. An assumption of normal error terms is provided as a condition of the outcome model. 
+
+FIGURE 1 HERE
+
+The first step can be either done visually or algorithmically. Visually, we can examine the pairs plots from our selected variables to see if any relationships are immediately present. In Figure 1, we can see that there does not appear to be much of a relationship between the loan amount and any of the variables asides from income. Fitting a strictly linear models demonstrates that only income remained as a covariate significant at the 95\% confidence level. Despite that, it was a pretty poor model.
+
+FIGURE 2 HERE
+
+Figure 2 zooms in on the relationship between loan amount and annual income. The lighting-bolt shape in the plot indicates a non-linear relationship between the two variables. We can see that it would require at least a polynomial of order four (solid line) to adequately represent the relationship. However, due to the  noise in the relationship, only a polynomial of order ten (dashed line) would adequately fit the trough. 
+
+Algorithmically, we can use an order selection method like the type that was found in the previous exercise to determine the correct polynomial. After the correct polynomial is found, the other effects can then be brought in using the \lstinline{stepAIC()} function to determine if any other variables have a significant contribution to the loan amount using AIC and BIC. 
+
+An alternative to using the high-order polynomials is to make use of splines. Piecewise linear functions are capable of fitting the lighting-bolt relationship between loan amount and annual income. If the two inflection points (38, 40.5) are used as knots, a fit results with the lowest AIC and BIC values results. This can also be done automatically using the \lstinline{spm()} function which will automatically determine the number and location of the knots. Yet, this will have a poorer fit compared to the piecewise linear function. Additionally, it will have a substantially greater amount of parameters due to the large number of knots used. 
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{lrr}
+    Model & \multicolumn{1}{l}{AIC} & \multicolumn{1}{l}{BIC} \\
+    Linear w/ Income & 2015.319 & 2030.042 \\
+    10 Degree Polynomial & 1054.065 & 1240.559 \\
+    Piecewise Linear & 889.733 & 914.2718 \\
+    Cubic Spline & 1023.262 & 959.0772 \\
+    \end{tabular}%
+  \caption{AIC and BIC of Considered Models}
+  \label{a1_tab}%
+\end{table}%
+
+
+Table~\ref{a1_tab} shows the Information Criteria of the considered models. The selected final model is the piecewise linear function. 
+
+$$\text{Loan} = \beta_0 + \beta_1\text{Income} + b_1(\text{Income} - 38)_+ + b_2(\text{Income} - 40.5)_+ $$
+
+Where $(a)_+ = max(a, 0)$. 
+
+As always, model diagnostics should be performed through the plotting of residuals and checking parametric form. In this case, the residual plots affirm the model fit, with no structure left in the plots. 
+
+
+\section{A2}
+
+
+NOTES:
+I mean intuitively I think I get what she's trying to ask of me, you want to use the derivatives of a function to determine where the knots should be
+i.e. that if the derivative of the function is 0, then there should be a knot there as there is an inflection point
+
+I just sort of feel that if the thing were less noisy, it would be easier to visualize the effect
+but maybe that's the point
+that you cannot really use your eyes to determine where the knots are
+
+figure out how to pick knots for a given variable
+and then create basis functions from those knots
+and fit model using ols
+
+
+\section{A3}
+
+The purpose is to specify a model for the probability of default of a customer given a set of covariates. This requires a generalized linear model (or GAM) with a binomial link function. There are two goals. On one hand, we want the best fitting model. On the other hand, interpretability, is a goal as we'd like to be able to explain why we have rejected a loan. Interpretability, can be taken in a number of different ways, it can mean sparsity, in that we want the most reasonable set of covariates that predict default. It it can also mean a minimal amount of higher order effects like polynomials or interactions, which are usually difficult to interpret. 
+
+We can use the \lstinline{stepAIC()} function to select the best model, but with \lstinline{k = log(n)}, to select using DIC, in order to penalize the amount of parameters more heavily and return a sparser model.
+
+
+Default ~ Income + Employment + Phone + Term + Income:Term
+

@@ -31,6 +31,8 @@ df = dfa[c("Loan", "Income", "Gender", "Customer", "Age")]
 
 library(MASS)
 
+f0 = lm(Loan ~ Income, data = df)
+summary(f0)
 
 f1 = lm(Loan ~ Income * Gender * Customer * Age, data = df)
 summary(f1)
@@ -39,6 +41,7 @@ stepback = stepAIC(f1, direction="backward")
 
 f2 = lm(Loan ~ Income + Gender + Age + Income:Gender + Income:Age, data = df)
 summary(f2)
+
 
 f3 = lm(Loan ~ Income + Gender + Customer + Age, data = df)
 summary(f3)
@@ -74,11 +77,6 @@ df %>%
   geom_smooth(method = "lm", formula = y ~ poly(x, 10), linetype = "twodash", color = "red", se = FALSE) 
 
 
-df %>%
-  ggplot(aes(y = Loan, x = Income, color = Gender)) + geom_point() +
-  geom_smooth(method = "lm")
-
-
 df = df %>%
   mutate(s_Income = scale(Income), s_Loan = scale(Loan))
 
@@ -96,6 +94,7 @@ dff = cbind(df, fv = f7$fitted.values)
 
 ## IC Outputs
 
+AIC(f0)
 AIC(f1)
 AIC(f2) 
 AIC(f3)
@@ -105,13 +104,15 @@ AIC(f6)
 AIC(f7) # Best
 AIC(f8)
 
+
+AIC(f0, k = log(nrow(df)))
 AIC(f1, k = log(nrow(df)))
 AIC(f2, k = log(nrow(df))) 
 AIC(f3, k = log(nrow(df)))
 AIC(f4, k = log(nrow(df)))
 AIC(f5, k = log(nrow(df)))
-AIC(f6, k = log(nrow(df))) # Best
-AIC(f7, k = log(nrow(df)))
+AIC(f6, k = log(nrow(df))) 
+AIC(f7, k = log(nrow(df))) # Best
 AIC(f8, k = log(nrow(df)))
 
 
@@ -123,7 +124,7 @@ dff = cbind(df, fv = f10$fitted.values)
   
 dff %>%
   ggplot(aes(x = Income, y = Loan)) + geom_point() + 
-  geom_point(aes(x = Income, y = fv), color = "red", alpha = 0.5)
+  geom_point(aes(x = Income, y = fv), color = "red", alpha = 0.5) 
 
 
 f11 = lm(Loan ~ (Income + pmax((df$Income - 37.5), 0) + pmax((df$Income - 40), 0)) + Gender, data = df)
@@ -132,6 +133,7 @@ plot(f11)
 
 
 AIC(f10, k = log(nrow(df)))
+AIC(f10)
 AIC(f11, k = log(nrow(df)))
 
 dff = cbind(df, fv = f11$fitted.values)
@@ -169,13 +171,10 @@ summary(f14)
 
 dff = cbind(df, fv= f14$fit$fitted)
 
-AIC(f14$fit)
-
-2 * (length(f14$fit$coef$random) + 1) - (2 * f14$fit$logLik)
-2 * log(1000) - (2 * f14$fit$logLik)
 
 
+#AIC
+2*(f14$fit$logLik-2*sum(f14$aux$df))
 
 
-## A3
 

@@ -60,6 +60,16 @@ The purpose is to specify a model for the probability of default of a customer g
 
 We can use the \lstinline{stepAIC()} function to select the best model, but with \lstinline{k = log(n)}, to select using DIC, in order to penalize the amount of parameters more heavily and return a sparser model.
 
-
+Best GLM method:
 Default ~ Income + Employment + Phone + Term + Income:Term
 
+Safer might be to fit a fully saturated model and use regularization to extract the correct model. 
+
+
+https://cran.r-project.org/web/packages/bestglm/vignettes/bestglm.pdf
+
+https://web.stanford.edu/~hastie/Papers/gamsel.pdf
+
+http://stackoverflow.com/questions/26694931/how-to-plot-logit-and-probit-in-ggplot2
+
+http://www.ats.ucla.edu/stat/r/dae/logit.htm

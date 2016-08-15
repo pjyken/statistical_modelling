@@ -16,3 +16,7 @@ str(dfb)
 
 #fitb1 = hglm(fixed = y ~ a1 + a2, random = ~1 | subject, data = dfb, calc.lik = T, family = [fill], maxit = 500)
 #fitb1$likelihood$cAIC
+
+f1 = hglm(fixed = Enzyme ~ Bloodpress + Heartperf, random = ~ 1 | Patient,
+          data = dfb, calc.like = TRUE, family = binomial(link = "logit"), maxit = 500)
+summary(f1)

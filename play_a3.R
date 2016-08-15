@@ -133,3 +133,15 @@ AIC(f10, k = log(nrow(dfa)))
 AIC(f11, k = log(nrow(dfa)))
 
 
+dfa %>% ggplot(aes(x = Default, y = Income)) + stat_sum(aes(size = ..n.., group = 1)) +
+  scale_size_area(max_size = 10)
+
+library(reshape2)
+
+dfa %>%
+  select(Default, Income , Employment , Phone , Term) %>%
+  melt() %>%
+  melt(id.vars = "Default") %>%
+  ggplot(aes(factor(Default), y = value, ))
+
+melt()
